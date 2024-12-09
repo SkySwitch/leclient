@@ -1,10 +1,10 @@
 {
-    "name": "yourivw/leclient",
+    "name": "skyswitch/leclient",
     "type": "library",
     "description": "PHP LetsEncrypt client library for ACME v2",
     "license": "MIT",
     "require": {
-        "php": ">=5.2",
+        "php": ">=7.4",
         "ext-openssl": "*"
     },
     "autoload": {
