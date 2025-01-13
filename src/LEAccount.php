@@ -130,8 +130,8 @@ class LEAccount
 		if($post['status'] === 200)
 		{
 			$this->key = $post['body']['key'];
-			$this->contact = $post['body']['contact'];
-			$this->agreement = isset($post['body']['agreement']) ? $post['body']['agreement'] : '';
+			$this->contact = $post['body']['contact'] ?? '';
+			$this->agreement = $post['body']['agreement'] ?? '';
 			$this->createdAt = $post['body']['createdAt'];
 			$this->status = $post['body']['status'];
 		}
@@ -157,8 +157,8 @@ class LEAccount
 		if($post['status'] === 200)
 		{
 			$this->key = $post['body']['key'];
-			$this->contact = $post['body']['contact'];
-			$this->agreement = isset($post['body']['agreement']) ? $post['body']['agreement'] : '';
+			$this->contact = $post['body']['contact'] ?? '';
+			$this->agreement = $post['body']['agreement'] ?? '';
 			$this->createdAt = $post['body']['createdAt'];
 			$this->status = $post['body']['status'];
 			if($this->log instanceof \Psr\Log\LoggerInterface) 
