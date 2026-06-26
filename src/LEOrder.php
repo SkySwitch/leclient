@@ -844,10 +844,18 @@ class LEOrder
         {
             if(preg_match_all('~(-----BEGIN\sCERTIFICATE-----[\s\S]+?-----END\sCERTIFICATE-----)~i', $response['body'], $matches))
             {
-                return [
-                    'leaf' => $matches[0][0],
-                    'intermediate' => $matches[0][1],
-                ];
+                // Collect ALL PEM blocks from the response. The first block is always the
+                // leaf; subsequent blocks are the certificate chain (intermediate and, in
+                // some CA configurations, the root). Keeping every block ensures the
+                // fullchain.crt written by saveCertificate() is complete. The 'intermediate'
+                // key is kept for backwards-compatibility with the preferredChain branch in
+                // getCertificate().
+                $blocks = $matches[0];
+                $result = ['leaf' => array_shift($blocks)];
+                foreach (array_values($blocks) as $i => $block) {
+                    $result[$i === 0 ? 'intermediate' : 'chain_' . $i] = $block;
+                }
+                return $result;
             }
             else
             {
