@@ -321,55 +321,55 @@ class LEOrder
      *						a Runtime Exception when requesting an unknown $type. Keep in mind a wildcard domain authorization only accepts LEOrder::CHALLENGE_TYPE_DNS.
      * @param string $authStatus The status of the authorization.
      * @param string $challengeStatus The status of the challenge.
-     * 
+     *
      * @return object	Returns an array with verification data if successful, false if not pending LetsEncrypt Authorization instances were found. The return array always
      *					contains 'type' and 'identifier'. For LEOrder::CHALLENGE_TYPE_HTTP, the array contains 'filename' and 'content' for necessary the authorization file.
      *					For LEOrder::CHALLENGE_TYPE_DNS, the array contains 'DNSDigest', which is the content for the necessary DNS TXT entry.
      */
 
-	public function getAuthorizations($type, $authStatus, $challengeStatus)
-	{
-		$authorizations = array();
+    public function getAuthorizations($type, $authStatus, $challengeStatus)
+    {
+        $authorizations = array();
 
-		$privateKey = openssl_pkey_get_private(file_get_contents($this->connector->accountKeys['private_key']));
-		$details = openssl_pkey_get_details($privateKey);
+        $privateKey = openssl_pkey_get_private(file_get_contents($this->connector->accountKeys['private_key']));
+        $details = openssl_pkey_get_details($privateKey);
 
-		$header = array(
-			"e" => LEFunctions::Base64UrlSafeEncode($details["rsa"]["e"]),
-			"kty" => "RSA",
-			"n" => LEFunctions::Base64UrlSafeEncode($details["rsa"]["n"])
+        $header = array(
+            "e" => LEFunctions::Base64UrlSafeEncode($details["rsa"]["e"]),
+            "kty" => "RSA",
+            "n" => LEFunctions::Base64UrlSafeEncode($details["rsa"]["n"])
 
-		);
-		$digest = LEFunctions::Base64UrlSafeEncode(hash('sha256', json_encode($header), true));
+        );
+        $digest = LEFunctions::Base64UrlSafeEncode(hash('sha256', json_encode($header), true));
 
-		foreach($this->authorizations as $auth)
-		{
-			if($auth->status == $authStatus)
-			{
-				try {
-					$challenge = $auth->getChallenge($type);
-				} catch (LEAuthorizationException $e) {
-					continue;
-				}
-				if($challenge['status'] == $challengeStatus)
-				{
-					$keyAuthorization = $challenge['token'] . '.' . $digest;
-					switch(strtolower($type))
-					{
-						case LEOrder::CHALLENGE_TYPE_HTTP:
-							$authorizations[] = array('type' => LEOrder::CHALLENGE_TYPE_HTTP, 'identifier' => $auth->identifier['value'], 'filename' => $challenge['token'], 'content' => $keyAuthorization);
-							break;
-						case LEOrder::CHALLENGE_TYPE_DNS:
-							$DNSDigest = LEFunctions::Base64UrlSafeEncode(hash('sha256', $keyAuthorization, true));
-							$authorizations[] = array('type' => LEOrder::CHALLENGE_TYPE_DNS, 'identifier' => $auth->identifier['value'], 'DNSDigest' => $DNSDigest);
-							break;
-					}
-				}
-			}
-		}
+        foreach($this->authorizations as $auth)
+        {
+            if($auth->status == $authStatus)
+            {
+                try {
+                    $challenge = $auth->getChallenge($type);
+                } catch (LEAuthorizationException $e) {
+                    continue;
+                }
+                if($challenge['status'] == $challengeStatus)
+                {
+                    $keyAuthorization = $challenge['token'] . '.' . $digest;
+                    switch(strtolower($type))
+                    {
+                        case LEOrder::CHALLENGE_TYPE_HTTP:
+                            $authorizations[] = array('type' => LEOrder::CHALLENGE_TYPE_HTTP, 'identifier' => $auth->identifier['value'], 'filename' => $challenge['token'], 'content' => $keyAuthorization);
+                            break;
+                        case LEOrder::CHALLENGE_TYPE_DNS:
+                            $DNSDigest = LEFunctions::Base64UrlSafeEncode(hash('sha256', $keyAuthorization, true));
+                            $authorizations[] = array('type' => LEOrder::CHALLENGE_TYPE_DNS, 'identifier' => $auth->identifier['value'], 'DNSDigest' => $DNSDigest);
+                            break;
+                    }
+                }
+            }
+        }
 
-		return count($authorizations) > 0 ? $authorizations : false;
-	}
+        return count($authorizations) > 0 ? $authorizations : false;
+    }
 
     /**
      * Get all pending LetsEncrypt Authorization instances and return the necessary data for verification. The data in the return object depends on the $type.
@@ -387,15 +387,15 @@ class LEOrder
     }
 
     /**
-      * Get all valid LetsEncrypt Authorization instances and returns the data. The data in the return object depends on the $type.
-      *
-      * @param int	$type	The type of verification to get. Supporting http-01 and dns-01. Supporting LEOrder::CHALLENGE_TYPE_HTTP and LEOrder::CHALLENGE_TYPE_DNS. Throws
-      *						a Runtime Exception when requesting an unknown $type. Keep in mind a wildcard domain authorization only accepts LEOrder::CHALLENGE_TYPE_DNS.
-      *
-      * @return object	Returns an array with verification data if successful, false if not pending LetsEncrypt Authorization instances were found. The return array always
-      *					contains 'type' and 'identifier'. For LEOrder::CHALLENGE_TYPE_HTTP, the array contains 'filename' and 'content' for necessary the authorization file.
-      *					For LEOrder::CHALLENGE_TYPE_DNS, the array contains 'DNSDigest', which is the content for the necessary DNS TXT entry.
-      */
+     * Get all valid LetsEncrypt Authorization instances and returns the data. The data in the return object depends on the $type.
+     *
+     * @param int	$type	The type of verification to get. Supporting http-01 and dns-01. Supporting LEOrder::CHALLENGE_TYPE_HTTP and LEOrder::CHALLENGE_TYPE_DNS. Throws
+     *						a Runtime Exception when requesting an unknown $type. Keep in mind a wildcard domain authorization only accepts LEOrder::CHALLENGE_TYPE_DNS.
+     *
+     * @return object	Returns an array with verification data if successful, false if not pending LetsEncrypt Authorization instances were found. The return array always
+     *					contains 'type' and 'identifier'. For LEOrder::CHALLENGE_TYPE_HTTP, the array contains 'filename' and 'content' for necessary the authorization file.
+     *					For LEOrder::CHALLENGE_TYPE_DNS, the array contains 'DNSDigest', which is the content for the necessary DNS TXT entry.
+     */
     public function getValidAuthorizations($type)
     {
         return $this->getAuthorizations($type, 'valid', 'valid');
@@ -706,6 +706,9 @@ class LEOrder
 
                                 $alternativeCertResponse = $this->postCertificateRequest($link);
                                 $alternativeCertificate = $this->validateCertificateResponse($alternativeCertResponse);
+                                // validateCertificateResponse() returns false when the
+                                // response lacks a leaf+intermediate pair; skip this link.
+                                if (false === $alternativeCertificate) continue;
                                 $parsedIntermediate = openssl_x509_parse($alternativeCertificate['intermediate']);
                                 if (isset($parsedIntermediate['issuer']['CN']) && $preferredChain === $parsedIntermediate['issuer']['CN']) {
                                     $certificates = $alternativeCertificate;
@@ -842,14 +845,17 @@ class LEOrder
     {
         if($response['status'] === 200)
         {
-            if(preg_match_all('~(-----BEGIN\sCERTIFICATE-----[\s\S]+?-----END\sCERTIFICATE-----)~i', $response['body'], $matches))
+            if(preg_match_all('~(-----BEGIN\sCERTIFICATE-----[\s\S]+?-----END\sCERTIFICATE-----)~i', $response['body'], $matches)
+                && count($matches[0]) >= 2)
             {
                 // Collect ALL PEM blocks from the response. The first block is always the
                 // leaf; subsequent blocks are the certificate chain (intermediate and, in
                 // some CA configurations, the root). Keeping every block ensures the
                 // fullchain.crt written by saveCertificate() is complete. The 'intermediate'
                 // key is kept for backwards-compatibility with the preferredChain branch in
-                // getCertificate().
+                // getCertificate(). Requiring >= 2 blocks guarantees callers always receive
+                // a string 'intermediate' — a leaf-only response falls through to the
+                // "Received invalid certificate" branch below, which returns false.
                 $blocks = $matches[0];
                 $result = ['leaf' => array_shift($blocks)];
                 foreach (array_values($blocks) as $i => $block) {
